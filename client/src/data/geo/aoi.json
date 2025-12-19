@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "NorCal Mushroom AOI"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-121.88, 37.33],
+            [-121.74, 38.54],
+            [-123.79, 39.30],
+            [-123.82, 39.41],
+            [-122.40, 37.77],
+            [-121.88, 37.33]
+          ]
+        ]
+      }
+    }
+  ]
+}

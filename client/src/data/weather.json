@@ -1,0 +1,25 @@
+{
+  "summary": "2024-2025 Water Year: Near-average precipitation overall, but wetter than average in Northern California (North of I-80). Warm valley/mountain temps leading to rapid snowmelt.",
+  "forecast": "Strong ridge expected in Spring 2025, bringing heatwave and abrupt transition to dry conditions. Early spring season may be short; summer/fall season could be robust.",
+  "recentPrecipitation": {
+    "north_coast": "Above Average",
+    "bay_area": "Average",
+    "sierra_foothills": "Above Average"
+  },
+  "soilMoistureIndex": {
+    "coastal": 0.85,
+    "inland": 0.65,
+    "mountain": 0.70
+  },
+  "lastSoakDate": "2025-12-15",
+  "alerts": [
+    {
+      "type": "warning",
+      "message": "Rapid drying expected in late Spring 2025 due to heatwave."
+    },
+    {
+      "type": "info",
+      "message": "Coastal fog drip may extend season in immediate coastal zones."
+    }
+  ]
+}

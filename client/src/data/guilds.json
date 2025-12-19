@@ -1,0 +1,80 @@
+[
+  {
+    "id": "chanterelle_oak",
+    "name": "Golden Chanterelle",
+    "scientificName": "Cantharellus californicus",
+    "tier": "A",
+    "color": "#FFD700",
+    "seasonality": "Late Fall - Early Spring (Nov - Apr)",
+    "habitat": "Coast Live Oak, Tanoak, Canyon Live Oak",
+    "description": "The California Golden Chanterelle is the largest chanterelle in the world. It grows in a symbiotic relationship with oak trees, particularly Coast Live Oak. Look for them in deep leaf litter under oaks, often on slopes.",
+    "recentStatus": "Strong fruiting reported in late 2024/early 2025. Numerous observations in coastal counties (Sonoma, Santa Cruz, Bay Area) following seasonal rains.",
+    "hotspots": ["Salt Point State Park", "Santa Cruz Mountains", "East Bay Regional Parks"],
+    "image": "/images/guild-chanterelle.png"
+  },
+  {
+    "id": "hedgehog_ecm",
+    "name": "Hedgehog Mushroom",
+    "scientificName": "Hydnum umbilicatum / repandum",
+    "tier": "A",
+    "color": "#FFE4B5",
+    "seasonality": "Winter (Nov - Feb)",
+    "habitat": "Mixed hardwood (Tanoak, Madrone) and Conifers (Bishop Pine, Douglas Fir)",
+    "description": "Distinguished by 'teeth' or spines under the cap instead of gills. H. umbilicatum (Bellybutton Hedgehog) is smaller with a central depression; H. repandum is larger.",
+    "recentStatus": "Active season as of Dec 2025. Reports from Sonoma and Mendocino coasts indicate good fruiting conditions.",
+    "hotspots": ["Mendocino Coast", "Sonoma Coast", "Salt Point"],
+    "image": "/images/guild-hedgehog.png"
+  },
+  {
+    "id": "trumpet_complex",
+    "name": "Black Trumpet",
+    "scientificName": "Craterellus calicornucopioides",
+    "tier": "A",
+    "color": "#4B0082",
+    "seasonality": "Winter - Spring (Nov - Mar)",
+    "habitat": "Tanoak, Madrone, Live Oak. Often in mossy banks.",
+    "description": "A highly prized edible that is difficult to spot due to its dark color. It has a funnel shape and no true gills. Often grows in large troops.",
+    "recentStatus": "Significant sightings (281+ obs) in late 2024/early 2025. Concentrated in coastal tanoak/madrone forests.",
+    "hotspots": ["Salt Point State Park", "Jackson Demonstration State Forest"],
+    "image": "/images/guild-trumpet.png"
+  },
+  {
+    "id": "candy_cap",
+    "name": "Candy Cap",
+    "scientificName": "Lactarius rubidus",
+    "tier": "B",
+    "color": "#D2691E",
+    "seasonality": "Mid - Late Winter (Dec - Feb)",
+    "habitat": "Mixed hardwood/conifer, often on moss or rotting wood. Pine needles.",
+    "description": "Famous for its intense maple syrup aroma when dried. Small, burnt-orange mushroom that exudes a milky latex when broken.",
+    "recentStatus": "Peak season expected Jan 2025. Historical data suggests strong fruiting in coastal ranges.",
+    "hotspots": ["San Francisco Bay Area", "North Coast", "Santa Cruz"],
+    "image": "/images/guild-candycap.png"
+  },
+  {
+    "id": "porcini",
+    "name": "King Bolete / Porcini",
+    "scientificName": "Boletus edulis complex",
+    "tier": "B",
+    "color": "#8B4513",
+    "seasonality": "Fall - Winter (Coastal), Summer - Fall (Inland)",
+    "habitat": "Bishop Pine, Monterey Pine (Coastal); Firs/Pines (Inland)",
+    "description": "The 'King' of mushrooms. Massive, meaty stem and a sponge-like pore surface under the cap. Mycorrhizal with conifers.",
+    "recentStatus": "Sporadic coastal fruiting reported Nov 2024. Coastal season typically peaks Oct-Jan.",
+    "hotspots": ["Mendonoma Coast", "Salt Point", "Sierra Nevada (Summer)"],
+    "image": "/images/guild-porcini.png"
+  },
+  {
+    "id": "burn_morel",
+    "name": "Burn Morel",
+    "scientificName": "Morchella species",
+    "tier": "B",
+    "color": "#2F4F4F",
+    "seasonality": "Spring - Early Summer (Apr - Jul)",
+    "habitat": "Conifer forests burned in the previous year (2024 fires).",
+    "description": "Honeycomb-like cap. appear in massive numbers in the spring following a forest fire. Elevation dependent.",
+    "recentStatus": "2025 season just beginning. 2024 Park Fire and Smith River Complex burn scars are key targets.",
+    "hotspots": ["Park Fire Burn Scar", "Smith River Complex Burn Scar"],
+    "image": "/images/guild-morel.png"
+  }
+]
