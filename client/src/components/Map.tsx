@@ -76,9 +76,10 @@
 
 /// <reference types="@types/google.maps" />
 
-import { useEffect, useRef } from "react";
-import { usePersistFn } from "@/hooks/usePersistFn";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 declare global {
   interface Window {
@@ -137,18 +138,30 @@ export function MapView({
 }: MapViewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const init = usePersistFn(async () => {
+  const initMap = async () => {
     try {
-      await loadMapScript();
+      setIsLoading(true);
+      setError(null);
+      
+      // Set a timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Map initialization timed out")), 15000)
+      );
+
+      await Promise.race([loadMapScript(), timeoutPromise]);
       
       if (!mapContainer.current) {
-        console.error("Map container not found");
-        return;
+        throw new Error("Map container not found");
       }
 
       // Prevent re-initialization if map already exists
-      if (map.current) return;
+      if (map.current) {
+        setIsLoading(false);
+        return;
+      }
 
       map.current = new window.google.maps.Map(mapContainer.current, {
         zoom: initialZoom,
@@ -163,16 +176,39 @@ export function MapView({
       if (onMapReady) {
         onMapReady(map.current);
       }
-    } catch (error) {
-      console.error("Error initializing map:", error);
+      setIsLoading(false);
+    } catch (err: any) {
+      console.error("Error initializing map:", err);
+      setError(err.message || "Failed to load map");
+      setIsLoading(false);
     }
-  });
+  };
 
   useEffect(() => {
-    init();
-  }, [init]);
+    initMap();
+    
+    // Cleanup function
+    return () => {
+      // We don't destroy the map instance as it might be expensive,
+      // but we could if needed.
+    };
+  }, []);
 
   return (
-    <div ref={mapContainer} className={cn("w-full h-[500px]", className)} />
+    <div className={cn("w-full h-[500px] relative", className)}>
+      <div ref={mapContainer} className="w-full h-full" />
+      
+      {error && (
+        <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center z-20 p-4 text-center">
+          <AlertTriangle className="w-10 h-10 text-destructive mb-2" />
+          <h3 className="text-lg font-bold text-foreground mb-1">Map Connection Failed</h3>
+          <p className="text-sm text-muted-foreground mb-4 max-w-xs">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline" className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            Reload Page
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
