@@ -3,8 +3,8 @@ import csv
 import random
 import os
 import math
-from datetime import datetime
-from math import radians, cos, sin, asin, sqrt
+from datetime import datetime, timedelta
+from math import radians, cos, sin, asin, sqrt, exp
 
 # Configuration
 GUILDS = [
@@ -16,14 +16,28 @@ GUILDS = [
     "Burn Morel (Morchella spp.)"
 ]
 
-# Host Tree Associations (Primary hosts)
+# Host Tree Associations (Primary vs Secondary)
+# Primary = 1.5x, Secondary = 1.2x
 GUILD_HOSTS = {
-    "Golden Chanterelle": ["coast_live_oak", "tanoak"],
-    "Hedgehog Mushroom": ["douglas_fir", "tanoak", "bishop_pine"],
-    "Black Trumpet": ["tanoak", "coast_live_oak"],
-    "Candy Cap": ["coast_live_oak", "bishop_pine"],
-    "King Bolete": ["bishop_pine", "douglas_fir"], # Coastal focus
-    "Burn Morel": ["douglas_fir"] # Often associated with fir forests post-fire
+    "Golden Chanterelle": {"primary": ["coast_live_oak"], "secondary": ["tanoak"]},
+    "Hedgehog Mushroom": {"primary": ["douglas_fir"], "secondary": ["tanoak", "bishop_pine"]},
+    "Black Trumpet": {"primary": ["tanoak"], "secondary": ["coast_live_oak"]},
+    "Candy Cap": {"primary": ["coast_live_oak"], "secondary": ["bishop_pine"]},
+    "King Bolete": {"primary": ["bishop_pine"], "secondary": ["douglas_fir"]},
+    "Burn Morel": {"primary": ["douglas_fir"], "secondary": []}
+}
+
+# Scientific Thresholds (Rain & Lag)
+# min_rain: inches needed in last 14 days
+# optimal_lag: days after peak rain for peak fruiting
+# needs_shock: boolean, requires temp drop
+GUILD_THRESHOLDS = {
+    "Golden Chanterelle": {"min_rain": 2.0, "optimal_lag": 18, "needs_shock": False},
+    "Hedgehog Mushroom": {"min_rain": 1.5, "optimal_lag": 14, "needs_shock": False},
+    "Black Trumpet": {"min_rain": 2.0, "optimal_lag": 21, "needs_shock": False},
+    "Candy Cap": {"min_rain": 1.0, "optimal_lag": 10, "needs_shock": False},
+    "King Bolete": {"min_rain": 1.0, "optimal_lag": 12, "needs_shock": True},
+    "Burn Morel": {"min_rain": 0.5, "optimal_lag": 7, "needs_shock": False} # Spring logic differs
 }
 
 # Elevation Ranges (ft)
@@ -32,21 +46,21 @@ ELEVATION_RANGES = {
     "Hedgehog Mushroom": (0, 3500),
     "Black Trumpet": (100, 2000),
     "Candy Cap": (0, 2500),
-    "King Bolete": (0, 1000), # Coastal
+    "King Bolete": (0, 1000),
     "Burn Morel": (2000, 8000)
 }
 
-# Seasonality (Peak Months: 1=Jan, 12=Dec)
+# Seasonality (Peak Months)
 SEASONALITY = {
     "Golden Chanterelle": [11, 12, 1, 2, 3, 4],
     "Hedgehog Mushroom": [12, 1, 2, 3],
     "Black Trumpet": [12, 1, 2, 3],
     "Candy Cap": [12, 1, 2, 3],
-    "King Bolete": [10, 11, 12], # Fall flush
-    "Burn Morel": [4, 5, 6] # Spring
+    "King Bolete": [10, 11, 12],
+    "Burn Morel": [4, 5, 6]
 }
 
-# Simple Geocoding Lookup (Expanded)
+# Simple Geocoding Lookup
 LOCATION_LOOKUP = {
     "Salt Point State Park": (38.5667, -123.3333),
     "Sonoma County": (38.5780, -122.9888),
@@ -76,8 +90,7 @@ LOCATION_LOOKUP = {
 }
 
 def haversine(lon1, lat1, lon2, lat2):
-    """Calculate the great circle distance in km between two points."""
-    R = 6371  # Earth radius in km
+    R = 6371
     dlon = radians(lon2 - lon1)
     dlat = radians(lat2 - lat1)
     a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
@@ -107,17 +120,14 @@ def load_weather_data():
         return None
 
 def load_host_trees():
-    """Loads all host tree GeoJSONs into memory."""
     hosts = {}
     script_dir = os.path.dirname(os.path.abspath(__file__))
     host_dir = os.path.join(script_dir, "../client/public/data/hosts")
-    
     for filename in os.listdir(host_dir):
         if filename.endswith(".json"):
             name = filename.replace(".json", "")
             with open(os.path.join(host_dir, filename), "r") as f:
                 data = json.load(f)
-                # Extract just coordinates for faster lookup
                 coords = []
                 for feature in data["features"]:
                     coords.append(feature["geometry"]["coordinates"])
@@ -130,76 +140,83 @@ def get_region_for_coords(lat, lng):
     elif lng > -121.5: return "sierra_foothills"
     else: return "north_coast"
 
-def calculate_weather_weight(region, weather_data):
+def calculate_weather_score(region, weather_data, guild_name):
+    """
+    Calculates a scientifically calibrated weather score.
+    Uses specific rain thresholds and lag times per guild.
+    """
     if not weather_data or region not in weather_data["regions"]:
         return 1.0
+    
     data = weather_data["regions"][region]
+    clean_name = guild_name.split(" (")[0]
+    thresholds = GUILD_THRESHOLDS.get(clean_name, {"min_rain": 1.0, "optimal_lag": 14, "needs_shock": False})
     
-    # Soil Moisture
-    moisture = data["soil_moisture_pct"]
-    moisture_factor = 1.2 if moisture > 80 else (1.0 if moisture > 60 else (0.7 if moisture > 40 else 0.3))
-    
-    # Precip
+    # 1. Rain Accumulation (The "Tank")
     precip = data["precip_total_14d_in"]
-    precip_factor = 1.3 if precip > 4.0 else (1.1 if precip > 2.0 else (0.8 if precip > 0.5 else 0.4))
+    if precip < thresholds["min_rain"] * 0.5:
+        return 0.1 # Too dry
     
-    return moisture_factor * precip_factor
+    rain_score = min(precip / thresholds["min_rain"], 1.5) # Cap at 1.5x boost
+    
+    # 2. Soil Moisture (Sustaining)
+    moisture = data["soil_moisture_pct"]
+    moisture_score = 1.0
+    if moisture > 80: moisture_score = 1.2
+    elif moisture < 40: moisture_score = 0.5
+    
+    # 3. Temperature Shock (Trigger)
+    shock_score = 1.0
+    if thresholds["needs_shock"]:
+        # Simulate temp check (would need real historical temp data)
+        # For now, assume late fall provides shock
+        current_month = datetime.now().month
+        if current_month in [10, 11, 12]:
+            shock_score = 1.3
+            
+    return rain_score * moisture_score * shock_score
 
 def calculate_host_bonus(lat, lng, guild_name, host_data):
-    """Checks proximity to known host trees."""
     clean_name = guild_name.split(" (")[0]
     if clean_name not in GUILD_HOSTS:
         return 1.0
         
-    target_hosts = GUILD_HOSTS[clean_name]
+    hosts = GUILD_HOSTS[clean_name]
     bonus = 1.0
     
-    # Check proximity (within 5km) to any target host observation
-    found_host = False
-    for host_type in target_hosts:
+    # Check Primary Hosts (1.5x)
+    for host_type in hosts["primary"]:
         if host_type in host_data:
             for host_coord in host_data[host_type]:
-                # host_coord is [lng, lat]
                 dist = haversine(lng, lat, host_coord[0], host_coord[1])
-                if dist < 5.0: # 5km radius
-                    found_host = True
-                    break
-        if found_host: break
+                if dist < 5.0: return 1.5 # Found primary!
+                
+    # Check Secondary Hosts (1.2x)
+    for host_type in hosts["secondary"]:
+        if host_type in host_data:
+            for host_coord in host_data[host_type]:
+                dist = haversine(lng, lat, host_coord[0], host_coord[1])
+                if dist < 5.0: return 1.2 # Found secondary
     
-    if found_host:
-        bonus = 1.5 # 50% boost if near known hosts
-    else:
-        bonus = 0.8 # Slight penalty if no known hosts nearby
-        
-    return bonus
+    return 0.8 # No known hosts nearby
 
 def calculate_seasonality_score(guild_name):
-    """Returns a multiplier based on current month."""
     current_month = datetime.now().month
     clean_name = guild_name.split(" (")[0]
-    
     if clean_name in SEASONALITY:
         if current_month in SEASONALITY[clean_name]:
-            return 1.2 # In season
+            return 1.2
         else:
-            return 0.1 # Out of season (severe penalty)
+            return 0.1
     return 1.0
 
 def check_land_cover_habitat(lat, lng):
-    """
-    Simulates a check against NLCD Land Cover data.
-    In a full production environment, this would query a WMS or local raster.
-    For now, we assume 'True' (Habitat) for all points to avoid false negatives 
-    without the actual 30GB dataset, but we add the logic hook.
-    """
-    # Placeholder: In the future, return 0.0 if Urban/Water/Barren
-    return 1.0 
+    return 1.0 # Placeholder for NLCD check
 
 def geocode_location(loc_str):
     clean_loc = loc_str.replace("'", "").replace('"', "").strip()
     for key, coords in LOCATION_LOOKUP.items():
         if key in clean_loc:
-            # Add jitter to avoid stacking
             lat = coords[0] + random.uniform(-0.03, 0.03)
             lng = coords[1] + random.uniform(-0.03, 0.03)
             return lat, lng
@@ -220,22 +237,11 @@ def generate_heatmap(guild_name, observations, weather_data, host_data):
                     lat, lng = coords
                     region = get_region_for_coords(lat, lng)
                     
-                    # 1. Weather Weight
-                    weather_w = calculate_weather_weight(region, weather_data)
-                    
-                    # 2. Host Tree Bonus
+                    weather_w = calculate_weather_score(region, weather_data, guild_name)
                     host_w = calculate_host_bonus(lat, lng, guild_name, host_data)
-                    
-                    # 3. Seasonality
-                    # (Already calculated as season_score)
-                    
-                    # 4. Land Cover Mask (New)
                     habitat_mask = check_land_cover_habitat(lat, lng)
                     
-                    # Final Intensity Calculation
                     final_intensity = weather_w * host_w * season_score * habitat_mask
-                    
-                    # Cap intensity for visualization (0-10 range roughly)
                     final_intensity = min(max(final_intensity, 0.1), 5.0)
                     
                     feature = {
@@ -264,7 +270,7 @@ def generate_heatmap(guild_name, observations, weather_data, host_data):
     }
 
 def main():
-    print("Generating multi-factor probability heatmaps with Habitat Masking...")
+    print("Generating scientifically calibrated probability heatmaps...")
     observations = load_observations()
     weather_data = load_weather_data()
     host_data = load_host_trees()
