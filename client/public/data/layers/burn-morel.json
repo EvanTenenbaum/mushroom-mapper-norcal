@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-121.21270428610869, 40.30719567279087]}, "properties": {"intensity": 1.0, "status": "Peak", "location": "Chester"}}]}
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-121.23245357570981, 40.29804923284939]}, "properties": {"intensity": 1.1, "status": "Peak", "location": "Chester", "region": "sierra_foothills"}}]}

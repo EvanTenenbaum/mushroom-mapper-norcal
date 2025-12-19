@@ -1,6 +1,8 @@
 import json
 import csv
 import random
+import os
+import math
 
 # Configuration
 GUILDS = [
@@ -42,8 +44,6 @@ def load_observations():
     """Loads the gathered iNaturalist data from CSV."""
     observations = []
     try:
-        import os
-        # Use relative path from the script location
         script_dir = os.path.dirname(os.path.abspath(__file__))
         data_path = os.path.join(script_dir, "data", "gather_guild_data.csv")
         with open(data_path, "r") as f:
@@ -54,38 +54,80 @@ def load_observations():
         print(f"Warning: {data_path} not found. Using empty list.")
     return observations
 
+def load_weather_data():
+    """Loads the live weather JSON."""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        weather_path = os.path.join(script_dir, "../client/public/data/weather_live.json")
+        with open(weather_path, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Warning: Weather data not found. Using defaults.")
+        return None
+
+def get_region_for_coords(lat, lng):
+    """Determines which weather region a point belongs to."""
+    # Simplified bounding boxes for regions
+    if lat > 39.0 and lng < -123.0:
+        return "north_coast"
+    elif lat < 38.5 and lng > -123.0:
+        return "bay_area"
+    elif lng > -121.5:
+        return "sierra_foothills"
+    else:
+        return "north_coast" # Default fallback
+
+def calculate_weather_weight(region, weather_data):
+    """Calculates a probability multiplier based on weather conditions."""
+    if not weather_data or region not in weather_data["regions"]:
+        return 1.0
+    
+    data = weather_data["regions"][region]
+    
+    # Soil Moisture Factor (Ideal: 60-90%)
+    moisture = data["soil_moisture_pct"]
+    moisture_factor = 1.0
+    if moisture > 80: moisture_factor = 1.2
+    elif moisture > 60: moisture_factor = 1.0
+    elif moisture > 40: moisture_factor = 0.7
+    else: moisture_factor = 0.3
+    
+    # Precip Factor (Ideal: > 2 inches in last 14 days)
+    precip = data["precip_total_14d_in"]
+    precip_factor = 1.0
+    if precip > 4.0: precip_factor = 1.3
+    elif precip > 2.0: precip_factor = 1.1
+    elif precip > 0.5: precip_factor = 0.8
+    else: precip_factor = 0.4
+    
+    return moisture_factor * precip_factor
+
 def geocode_location(loc_str):
     """Tries to find coordinates for a location string."""
-    # Clean string
     clean_loc = loc_str.replace("'", "").replace('"', "").strip()
-    
-    # Check lookup
     for key, coords in LOCATION_LOOKUP.items():
         if key in clean_loc:
-            # Add small random jitter to prevent exact overlap
             lat = coords[0] + random.uniform(-0.02, 0.02)
             lng = coords[1] + random.uniform(-0.02, 0.02)
             return lat, lng
-            
     return None
 
-def generate_heatmap(guild_name, observations):
-    """Generates a GeoJSON FeatureCollection of points for a specific guild."""
+def generate_heatmap(guild_name, observations, weather_data):
+    """Generates a GeoJSON FeatureCollection with weather-weighted intensity."""
     features = []
     
     for obs in observations:
         if guild_name in obs["Subject"]:
-            # Parse the list string like "['Loc1', 'Loc2']"
             loc_list_str = obs["Recent Locations"]
-            # Simple parsing of the list string
             locations = loc_list_str.strip("[]").split(",")
             
             for loc in locations:
                 coords = geocode_location(loc)
                 if coords:
                     lat, lng = coords
+                    region = get_region_for_coords(lat, lng)
+                    weight = calculate_weather_weight(region, weather_data)
                     
-                    # Create a feature for each point
                     feature = {
                         "type": "Feature",
                         "geometry": {
@@ -93,9 +135,10 @@ def generate_heatmap(guild_name, observations):
                             "coordinates": [lng, lat]
                         },
                         "properties": {
-                            "intensity": 1.0,
+                            "intensity": float(f"{weight:.2f}"), # Apply weather weight
                             "status": obs["Current Status"],
-                            "location": loc.strip().replace("'", "").replace('"', "")
+                            "location": loc.strip().replace("'", "").replace('"', ""),
+                            "region": region
                         }
                     }
                     features.append(feature)
@@ -106,18 +149,17 @@ def generate_heatmap(guild_name, observations):
     }
 
 def main():
-    print("Generating probability heatmaps with geocoding...")
+    print("Generating weather-weighted probability heatmaps...")
     observations = load_observations()
+    weather_data = load_weather_data()
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "../client/public/data/layers")
-    import os
     os.makedirs(output_dir, exist_ok=True)
     
     for guild in GUILDS:
-        # Simplify guild name for filename
         safe_name = guild.split(" (")[0].lower().replace(" ", "-")
-        geojson = generate_heatmap(guild, observations)
+        geojson = generate_heatmap(guild, observations, weather_data)
         
         output_path = f"{output_dir}/{safe_name}.json"
         with open(output_path, "w") as f:

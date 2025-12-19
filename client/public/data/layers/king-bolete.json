@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-123.33311342359411, 38.54766230685842]}, "properties": {"intensity": 1.0, "status": "Peak", "location": "Salt Point State Park"}}]}
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-123.35031793919505, 38.56439611932858]}, "properties": {"intensity": 1.56, "status": "Peak", "location": "Salt Point State Park", "region": "north_coast"}}]}
