@@ -1,1 +1,1 @@
-{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.82515097642688, 38.081067590267224]}, "properties": {"intensity": 1.1, "status": "Early", "location": "Point Reyes", "region": "bay_area"}}]}
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.78736844659217, 38.0953988665677]}, "properties": {"intensity": 1.98, "factors": {"weather": 1.1, "host": 1.5, "season": 1.2}, "location": "Point Reyes", "region": "bay_area"}}]}

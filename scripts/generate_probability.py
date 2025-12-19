@@ -3,6 +3,8 @@ import csv
 import random
 import os
 import math
+from datetime import datetime
+from math import radians, cos, sin, asin, sqrt
 
 # Configuration
 GUILDS = [
@@ -14,7 +16,37 @@ GUILDS = [
     "Burn Morel (Morchella spp.)"
 ]
 
-# Simple Geocoding Lookup for NorCal Mushroom Spots
+# Host Tree Associations (Primary hosts)
+GUILD_HOSTS = {
+    "Golden Chanterelle": ["coast_live_oak", "tanoak"],
+    "Hedgehog Mushroom": ["douglas_fir", "tanoak", "bishop_pine"],
+    "Black Trumpet": ["tanoak", "coast_live_oak"],
+    "Candy Cap": ["coast_live_oak", "bishop_pine"],
+    "King Bolete": ["bishop_pine", "douglas_fir"], # Coastal focus
+    "Burn Morel": ["douglas_fir"] # Often associated with fir forests post-fire
+}
+
+# Elevation Ranges (ft)
+ELEVATION_RANGES = {
+    "Golden Chanterelle": (0, 2500),
+    "Hedgehog Mushroom": (0, 3500),
+    "Black Trumpet": (100, 2000),
+    "Candy Cap": (0, 2500),
+    "King Bolete": (0, 1000), # Coastal
+    "Burn Morel": (2000, 8000)
+}
+
+# Seasonality (Peak Months: 1=Jan, 12=Dec)
+SEASONALITY = {
+    "Golden Chanterelle": [11, 12, 1, 2, 3, 4],
+    "Hedgehog Mushroom": [12, 1, 2, 3],
+    "Black Trumpet": [12, 1, 2, 3],
+    "Candy Cap": [12, 1, 2, 3],
+    "King Bolete": [10, 11, 12], # Fall flush
+    "Burn Morel": [4, 5, 6] # Spring
+}
+
+# Simple Geocoding Lookup (Expanded)
 LOCATION_LOOKUP = {
     "Salt Point State Park": (38.5667, -123.3333),
     "Sonoma County": (38.5780, -122.9888),
@@ -37,11 +69,22 @@ LOCATION_LOOKUP = {
     "Arcata": (40.8665, -124.0828),
     "Point Reyes": (38.0691, -122.8069),
     "Headwaters Trail, Eureka": (40.7500, -124.1500),
-    "Chester": (40.3063, -121.2311)
+    "Chester": (40.3063, -121.2311),
+    "Santa Cruz": (36.9741, -122.0308),
+    "Oakland Hills": (37.8044, -122.2712),
+    "Marin Watershed": (37.9600, -122.5800)
 }
 
+def haversine(lon1, lat1, lon2, lat2):
+    """Calculate the great circle distance in km between two points."""
+    R = 6371  # Earth radius in km
+    dlon = radians(lon2 - lon1)
+    dlat = radians(lat2 - lat1)
+    a = sin(dlat / 2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2)**2
+    c = 2 * asin(sqrt(a))
+    return R * c
+
 def load_observations():
-    """Loads the gathered iNaturalist data from CSV."""
     observations = []
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -51,70 +94,111 @@ def load_observations():
             for row in reader:
                 observations.append(row)
     except FileNotFoundError:
-        print(f"Warning: {data_path} not found. Using empty list.")
+        print(f"Warning: {data_path} not found.")
     return observations
 
 def load_weather_data():
-    """Loads the live weather JSON."""
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         weather_path = os.path.join(script_dir, "../client/public/data/weather_live.json")
         with open(weather_path, "r") as f:
             return json.load(f)
     except FileNotFoundError:
-        print("Warning: Weather data not found. Using defaults.")
         return None
 
+def load_host_trees():
+    """Loads all host tree GeoJSONs into memory."""
+    hosts = {}
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    host_dir = os.path.join(script_dir, "../client/public/data/hosts")
+    
+    for filename in os.listdir(host_dir):
+        if filename.endswith(".json"):
+            name = filename.replace(".json", "")
+            with open(os.path.join(host_dir, filename), "r") as f:
+                data = json.load(f)
+                # Extract just coordinates for faster lookup
+                coords = []
+                for feature in data["features"]:
+                    coords.append(feature["geometry"]["coordinates"])
+                hosts[name] = coords
+    return hosts
+
 def get_region_for_coords(lat, lng):
-    """Determines which weather region a point belongs to."""
-    # Simplified bounding boxes for regions
-    if lat > 39.0 and lng < -123.0:
-        return "north_coast"
-    elif lat < 38.5 and lng > -123.0:
-        return "bay_area"
-    elif lng > -121.5:
-        return "sierra_foothills"
-    else:
-        return "north_coast" # Default fallback
+    if lat > 39.0 and lng < -123.0: return "north_coast"
+    elif lat < 38.5 and lng > -123.0: return "bay_area"
+    elif lng > -121.5: return "sierra_foothills"
+    else: return "north_coast"
 
 def calculate_weather_weight(region, weather_data):
-    """Calculates a probability multiplier based on weather conditions."""
     if not weather_data or region not in weather_data["regions"]:
         return 1.0
-    
     data = weather_data["regions"][region]
     
-    # Soil Moisture Factor (Ideal: 60-90%)
+    # Soil Moisture
     moisture = data["soil_moisture_pct"]
-    moisture_factor = 1.0
-    if moisture > 80: moisture_factor = 1.2
-    elif moisture > 60: moisture_factor = 1.0
-    elif moisture > 40: moisture_factor = 0.7
-    else: moisture_factor = 0.3
+    moisture_factor = 1.2 if moisture > 80 else (1.0 if moisture > 60 else (0.7 if moisture > 40 else 0.3))
     
-    # Precip Factor (Ideal: > 2 inches in last 14 days)
+    # Precip
     precip = data["precip_total_14d_in"]
-    precip_factor = 1.0
-    if precip > 4.0: precip_factor = 1.3
-    elif precip > 2.0: precip_factor = 1.1
-    elif precip > 0.5: precip_factor = 0.8
-    else: precip_factor = 0.4
+    precip_factor = 1.3 if precip > 4.0 else (1.1 if precip > 2.0 else (0.8 if precip > 0.5 else 0.4))
     
     return moisture_factor * precip_factor
 
+def calculate_host_bonus(lat, lng, guild_name, host_data):
+    """Checks proximity to known host trees."""
+    clean_name = guild_name.split(" (")[0]
+    if clean_name not in GUILD_HOSTS:
+        return 1.0
+        
+    target_hosts = GUILD_HOSTS[clean_name]
+    bonus = 1.0
+    
+    # Check proximity (within 5km) to any target host observation
+    # This is a simplified spatial check for the prototype
+    found_host = False
+    for host_type in target_hosts:
+        if host_type in host_data:
+            for host_coord in host_data[host_type]:
+                # host_coord is [lng, lat]
+                dist = haversine(lng, lat, host_coord[0], host_coord[1])
+                if dist < 5.0: # 5km radius
+                    found_host = True
+                    break
+        if found_host: break
+    
+    if found_host:
+        bonus = 1.5 # 50% boost if near known hosts
+    else:
+        bonus = 0.8 # Slight penalty if no known hosts nearby (could still be there, just unmapped)
+        
+    return bonus
+
+def calculate_seasonality_score(guild_name):
+    """Returns a multiplier based on current month."""
+    current_month = datetime.now().month
+    clean_name = guild_name.split(" (")[0]
+    
+    if clean_name in SEASONALITY:
+        if current_month in SEASONALITY[clean_name]:
+            return 1.2 # In season
+        else:
+            return 0.1 # Out of season (severe penalty)
+    return 1.0
+
 def geocode_location(loc_str):
-    """Tries to find coordinates for a location string."""
     clean_loc = loc_str.replace("'", "").replace('"', "").strip()
     for key, coords in LOCATION_LOOKUP.items():
         if key in clean_loc:
-            lat = coords[0] + random.uniform(-0.02, 0.02)
-            lng = coords[1] + random.uniform(-0.02, 0.02)
+            # Add jitter to avoid stacking
+            lat = coords[0] + random.uniform(-0.03, 0.03)
+            lng = coords[1] + random.uniform(-0.03, 0.03)
             return lat, lng
     return None
 
-def generate_heatmap(guild_name, observations, weather_data):
-    """Generates a GeoJSON FeatureCollection with weather-weighted intensity."""
+def generate_heatmap(guild_name, observations, weather_data, host_data):
     features = []
+    season_score = calculate_seasonality_score(guild_name)
     
     for obs in observations:
         if guild_name in obs["Subject"]:
@@ -126,7 +210,21 @@ def generate_heatmap(guild_name, observations, weather_data):
                 if coords:
                     lat, lng = coords
                     region = get_region_for_coords(lat, lng)
-                    weight = calculate_weather_weight(region, weather_data)
+                    
+                    # 1. Weather Weight
+                    weather_w = calculate_weather_weight(region, weather_data)
+                    
+                    # 2. Host Tree Bonus
+                    host_w = calculate_host_bonus(lat, lng, guild_name, host_data)
+                    
+                    # 3. Seasonality
+                    # (Already calculated as season_score)
+                    
+                    # Final Intensity Calculation
+                    final_intensity = weather_w * host_w * season_score
+                    
+                    # Cap intensity for visualization (0-10 range roughly)
+                    final_intensity = min(max(final_intensity, 0.1), 5.0)
                     
                     feature = {
                         "type": "Feature",
@@ -135,8 +233,12 @@ def generate_heatmap(guild_name, observations, weather_data):
                             "coordinates": [lng, lat]
                         },
                         "properties": {
-                            "intensity": float(f"{weight:.2f}"), # Apply weather weight
-                            "status": obs["Current Status"],
+                            "intensity": float(f"{final_intensity:.2f}"),
+                            "factors": {
+                                "weather": float(f"{weather_w:.2f}"),
+                                "host": float(f"{host_w:.2f}"),
+                                "season": float(f"{season_score:.2f}")
+                            },
                             "location": loc.strip().replace("'", "").replace('"', ""),
                             "region": region
                         }
@@ -149,9 +251,10 @@ def generate_heatmap(guild_name, observations, weather_data):
     }
 
 def main():
-    print("Generating weather-weighted probability heatmaps...")
+    print("Generating multi-factor probability heatmaps...")
     observations = load_observations()
     weather_data = load_weather_data()
+    host_data = load_host_trees()
     
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "../client/public/data/layers")
@@ -159,7 +262,7 @@ def main():
     
     for guild in GUILDS:
         safe_name = guild.split(" (")[0].lower().replace(" ", "-")
-        geojson = generate_heatmap(guild, observations, weather_data)
+        geojson = generate_heatmap(guild, observations, weather_data, host_data)
         
         output_path = f"{output_dir}/{safe_name}.json"
         with open(output_path, "w") as f:
