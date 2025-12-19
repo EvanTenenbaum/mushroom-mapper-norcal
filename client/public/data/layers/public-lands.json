@@ -1,0 +1,145 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Salt Point State Park",
+        "agency": "California State Parks",
+        "access": "Open"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -123.34,
+              38.58
+            ],
+            [
+              -123.32,
+              38.58
+            ],
+            [
+              -123.32,
+              38.55
+            ],
+            [
+              -123.34,
+              38.55
+            ],
+            [
+              -123.34,
+              38.58
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Jackson Demonstration State Forest",
+        "agency": "CAL FIRE",
+        "access": "Open"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -123.75,
+              39.4
+            ],
+            [
+              -123.6,
+              39.4
+            ],
+            [
+              -123.6,
+              39.3
+            ],
+            [
+              -123.75,
+              39.3
+            ],
+            [
+              -123.75,
+              39.4
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Point Reyes National Seashore",
+        "agency": "NPS",
+        "access": "Restricted (Permit Required for some areas)"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -123.0,
+              38.1
+            ],
+            [
+              -122.8,
+              38.1
+            ],
+            [
+              -122.8,
+              37.9
+            ],
+            [
+              -123.0,
+              37.9
+            ],
+            [
+              -123.0,
+              38.1
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mount Tamalpais State Park",
+        "agency": "California State Parks",
+        "access": "Open"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -122.65,
+              37.95
+            ],
+            [
+              -122.55,
+              37.95
+            ],
+            [
+              -122.55,
+              37.85
+            ],
+            [
+              -122.65,
+              37.85
+            ],
+            [
+              -122.65,
+              37.95
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -2,11 +2,14 @@ import { useState } from "react";
 import MainMap from "@/components/Map/MainMap";
 import GuildCard from "@/components/UI/GuildCard";
 import WeatherWidget from "@/components/UI/WeatherWidget";
+import BestBetsWidget from "@/components/UI/BestBetsWidget";
+import ActionToolsWidget from "@/components/UI/ActionToolsWidget";
+import HotspotFinder from "@/components/UI/HotspotFinder";
 import guildsDataRaw from "@/data/guilds.json";
 import { Guild } from "@/types";
 
 const guildsData = guildsDataRaw as Guild[];
-import { Layers, AlertTriangle, Menu, X } from "lucide-react";
+import { Layers, AlertTriangle, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +17,14 @@ export default function Home() {
   const [selectedGuildId, setSelectedGuildId] = useState<string>(guildsData[0].id);
   const [showUncertainty, setShowUncertainty] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showAllGuilds, setShowAllGuilds] = useState(false);
+
+  const handleFindHotspots = (lat: number, lng: number, radiusMiles: number, publicOnly: boolean) => {
+    console.log(`Searching for hotspots at ${lat}, ${lng} within ${radiusMiles} miles (Public Only: ${publicOnly})`);
+    // In a real implementation, this would trigger a map search
+    // For now, we'll just alert the user
+    alert(`Scanning ${radiusMiles} mile radius around your location... \n(Public Lands Only: ${publicOnly ? 'ON' : 'OFF'})`);
+  };
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background flex relative">
@@ -24,7 +35,7 @@ export default function Home() {
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+        <div className="p-6 border-b border-white/10 flex justify-between items-center shrink-0">
           <div>
             <h1 className="font-heading font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
               MYCO-MAP
@@ -46,34 +57,58 @@ export default function Home() {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
           
-          {/* Weather Section */}
+          {/* 1. Best Bets (Dynamic Leaderboard) */}
+          <section>
+            <BestBetsWidget 
+              guilds={guildsData} 
+              selectedId={selectedGuildId}
+              onSelect={setSelectedGuildId}
+            />
+          </section>
+
+          {/* 2. Smart Scout (Location Radar) */}
+          <section className="glass-panel rounded-xl p-4 border border-primary/20 bg-primary/5">
+            <HotspotFinder onFindHotspots={handleFindHotspots} />
+          </section>
+
+          {/* 3. Action Tools */}
+          <section>
+            <h2 className="text-sm font-mono text-muted-foreground uppercase tracking-wider mb-3">
+              Field Tools
+            </h2>
+            <ActionToolsWidget />
+          </section>
+
+          {/* 4. Weather Widget */}
           <section>
             <WeatherWidget />
           </section>
 
-          {/* Guild Selection */}
+          {/* 5. Full Guild List (Collapsible) */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
-                Target Guilds
-              </h2>
-              <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/20">
-                {guildsData.length} ACTIVE
-              </span>
-            </div>
-            <div className="space-y-2">
-              {guildsData.map((guild) => (
-                <GuildCard 
-                  key={guild.id}
-                  guild={guild}
-                  isActive={selectedGuildId === guild.id}
-                  onClick={() => setSelectedGuildId(guild.id)}
-                />
-              ))}
-            </div>
+            <button 
+              onClick={() => setShowAllGuilds(!showAllGuilds)}
+              className="flex items-center justify-between w-full text-sm font-mono text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+            >
+              <span>All Species Database</span>
+              {showAllGuilds ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            
+            {showAllGuilds && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                {guildsData.map((guild) => (
+                  <GuildCard 
+                    key={guild.id}
+                    guild={guild}
+                    isActive={selectedGuildId === guild.id}
+                    onClick={() => setSelectedGuildId(guild.id)}
+                  />
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* Layer Controls */}
+          {/* 6. Layer Controls */}
           <section className="glass-panel rounded-xl p-4">
             <h2 className="text-sm font-mono text-muted-foreground uppercase tracking-wider mb-3">
               Map Overlays
@@ -108,12 +143,10 @@ export default function Home() {
         </div>
         
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 text-[10px] text-muted-foreground font-mono text-center">
-          DATA SOURCES: 3DEP • NAIP • iNATURALIST • PRISM
+        <div className="p-4 border-t border-white/10 text-[10px] text-muted-foreground font-mono text-center shrink-0">
+          DATA SOURCES: 3DEP • NAIP • iNATURALIST • PRISM • CPAD
         </div>
       </aside>
-
-      
 
       {/* Main Map Area */}
       <main className={cn(
