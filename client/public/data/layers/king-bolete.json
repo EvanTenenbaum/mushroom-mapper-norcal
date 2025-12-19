@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-123.33311342359411, 38.54766230685842]}, "properties": {"intensity": 1.0, "status": "Peak", "location": "Salt Point State Park"}}]}

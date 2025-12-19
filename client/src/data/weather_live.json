@@ -1,0 +1,20 @@
+{
+  "generated_at": "2025-12-18T19:37:47.355937",
+  "regions": {
+    "north_coast": {
+      "precip_total_14d_in": 4.5,
+      "soil_moisture_pct": 85,
+      "temp_anomaly_c": 0.5
+    },
+    "bay_area": {
+      "precip_total_14d_in": 2.1,
+      "soil_moisture_pct": 65,
+      "temp_anomaly_c": 1.2
+    },
+    "sierra_foothills": {
+      "precip_total_14d_in": 3.8,
+      "soil_moisture_pct": 72,
+      "temp_anomaly_c": -0.5
+    }
+  }
+}

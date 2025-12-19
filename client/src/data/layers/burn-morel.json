@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-121.21270428610869, 40.30719567279087]}, "properties": {"intensity": 1.0, "status": "Peak", "location": "Chester"}}]}

@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-122.79943498094673, 38.058564137095644]}, "properties": {"intensity": 1.0, "status": "Early", "location": "Point Reyes"}}]}
