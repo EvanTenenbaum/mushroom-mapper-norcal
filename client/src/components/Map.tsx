@@ -79,7 +79,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
 
 declare global {
   interface Window {
@@ -99,6 +99,10 @@ let loadPromise: Promise<void> | null = null;
 function loadMapScript() {
   if (loadPromise) return loadPromise;
 
+  if (!API_KEY) {
+    return Promise.reject(new Error("API Key is missing. Check VITE_FRONTEND_FORGE_API_KEY."));
+  }
+
   loadPromise = new Promise((resolve, reject) => {
     if (window.google && window.google.maps) {
       resolve();
@@ -115,7 +119,9 @@ function loadMapScript() {
     };
     script.onerror = (e) => {
       console.error("Failed to load Google Maps script", e);
-      reject(e);
+      // Reset promise so we can try again
+      loadPromise = null;
+      reject(new Error("Network error: Failed to load Google Maps script. Check your connection."));
     };
     document.head.appendChild(script);
   });
@@ -148,7 +154,7 @@ export function MapView({
       
       // Set a timeout to prevent infinite loading
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Map initialization timed out")), 15000)
+        setTimeout(() => reject(new Error("Connection timed out (15s). Satellite uplink failed.")), 15000)
       );
 
       await Promise.race([loadMapScript(), timeoutPromise]);
@@ -181,6 +187,10 @@ export function MapView({
       console.error("Error initializing map:", err);
       setError(err.message || "Failed to load map");
       setIsLoading(false);
+      // Reset global promise if it failed so retry works
+      if (loadPromise) {
+        loadPromise.catch(() => { loadPromise = null; });
+      }
     }
   };
 
@@ -194,18 +204,39 @@ export function MapView({
     };
   }, []);
 
+  const handleRetry = () => {
+    // Force reset the promise if it exists
+    loadPromise = null;
+    // Remove existing script tag if any
+    const scripts = document.querySelectorAll(`script[src*="${MAPS_PROXY_URL}"]`);
+    scripts.forEach(s => s.remove());
+    
+    initMap();
+  };
+
   return (
     <div className={cn("w-full h-[500px] relative", className)}>
       <div ref={mapContainer} className="w-full h-full" />
       
+      {isLoading && !error && (
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10 pointer-events-none">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-primary font-mono text-sm animate-pulse">INITIALIZING SATELLITE UPLINK...</span>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center z-20 p-4 text-center">
-          <AlertTriangle className="w-10 h-10 text-destructive mb-2" />
-          <h3 className="text-lg font-bold text-foreground mb-1">Map Connection Failed</h3>
-          <p className="text-sm text-muted-foreground mb-4 max-w-xs">{error}</p>
-          <Button onClick={() => window.location.reload()} variant="outline" className="gap-2">
+          <div className="bg-destructive/10 p-4 rounded-full mb-4">
+            <WifiOff className="w-8 h-8 text-destructive" />
+          </div>
+          <h3 className="text-lg font-bold text-foreground mb-1">Connection Failed</h3>
+          <p className="text-sm text-muted-foreground mb-6 max-w-xs font-mono">{error}</p>
+          <Button onClick={handleRetry} variant="default" className="gap-2">
             <RefreshCw className="w-4 h-4" />
-            Reload Page
+            Retry Connection
           </Button>
         </div>
       )}
