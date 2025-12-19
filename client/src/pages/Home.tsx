@@ -113,27 +113,41 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Toggle Button (Mobile/Collapsed) */}
-      {!sidebarOpen && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute top-4 left-4 z-20 bg-background/80 backdrop-blur border-white/10"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
-      )}
+      
 
       {/* Main Map Area */}
       <main className={cn(
         "flex-1 h-full transition-all duration-300 relative",
-        "md:pl-[400px]" // Reserve space for sidebar on desktop
+        sidebarOpen ? "md:pl-[400px]" : "pl-0"
       )}>
         <MainMap 
           selectedGuildId={selectedGuildId}
           showUncertainty={showUncertainty}
         />
+        
+        {/* Mobile Toggle (when sidebar is closed) */}
+        {!sidebarOpen && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute top-4 left-4 z-20 bg-background/80 backdrop-blur border-white/10 md:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        )}
+
+        {/* Desktop Toggle (always visible if closed) */}
+        {!sidebarOpen && (
+           <Button
+            variant="outline"
+            size="icon"
+            className="absolute top-4 left-4 z-20 bg-background/80 backdrop-blur border-white/10 hidden md:flex"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
+        )}
         
         {/* Map Overlay HUD (Bottom Right) */}
         <div className="absolute bottom-8 right-8 z-10 flex flex-col gap-2 pointer-events-none">

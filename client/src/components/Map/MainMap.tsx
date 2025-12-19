@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Locate } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MapView } from '@/components/Map';
 import { updateProbabilityLayer } from './ProbabilityLayer';
 import { addUncertaintyLayer } from './UncertaintyLayer';
@@ -78,6 +80,45 @@ export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }:
         className="w-full h-full"
         onMapReady={handleMapReady}
       />
+
+      {/* Locate Me Control */}
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute bottom-32 right-8 z-10 rounded-full shadow-lg border border-white/10"
+        onClick={() => {
+          if (navigator.geolocation && mapRef.current) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const pos = {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                };
+                mapRef.current?.setCenter(pos);
+                mapRef.current?.setZoom(14);
+                new google.maps.Marker({
+                  position: pos,
+                  map: mapRef.current,
+                  title: "You are here",
+                  icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: "#4285F4",
+                    fillOpacity: 1,
+                    strokeColor: "white",
+                    strokeWeight: 2,
+                  },
+                });
+              },
+              () => {
+                console.error("Error: The Geolocation service failed.");
+              }
+            );
+          }
+        }}
+      >
+        <Locate className="w-5 h-5" />
+      </Button>
       
       {/* Loading Overlay */}
       {!mapReady && (
