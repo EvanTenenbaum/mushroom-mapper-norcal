@@ -46,7 +46,9 @@ def main():
     data = fetch_weather_data()
     
     # Save to client data folder
-    output_path = "../client/src/data/weather_live.json"
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(script_dir, "../client/public/data/weather_live.json")
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2)
     

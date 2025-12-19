@@ -42,12 +42,16 @@ def load_observations():
     """Loads the gathered iNaturalist data from CSV."""
     observations = []
     try:
-        with open("/home/ubuntu/gather_guild_data.csv", "r") as f:
+        import os
+        # Use relative path from the script location
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        data_path = os.path.join(script_dir, "data", "gather_guild_data.csv")
+        with open(data_path, "r") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 observations.append(row)
     except FileNotFoundError:
-        print("Warning: gather_guild_data.csv not found. Using empty list.")
+        print(f"Warning: {data_path} not found. Using empty list.")
     return observations
 
 def geocode_location(loc_str):
@@ -105,7 +109,8 @@ def main():
     print("Generating probability heatmaps with geocoding...")
     observations = load_observations()
     
-    output_dir = "../client/src/data/layers"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, "../client/public/data/layers")
     import os
     os.makedirs(output_dir, exist_ok=True)
     

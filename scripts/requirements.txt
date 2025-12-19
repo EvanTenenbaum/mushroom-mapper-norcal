@@ -1,0 +1,5 @@
+# No external dependencies currently required.
+# Standard library only: json, csv, random, datetime, os, math
+# Future dependencies:
+# requests
+# pandas
