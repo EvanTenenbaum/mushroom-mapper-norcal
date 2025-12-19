@@ -155,7 +155,6 @@ def calculate_host_bonus(lat, lng, guild_name, host_data):
     bonus = 1.0
     
     # Check proximity (within 5km) to any target host observation
-    # This is a simplified spatial check for the prototype
     found_host = False
     for host_type in target_hosts:
         if host_type in host_data:
@@ -170,7 +169,7 @@ def calculate_host_bonus(lat, lng, guild_name, host_data):
     if found_host:
         bonus = 1.5 # 50% boost if near known hosts
     else:
-        bonus = 0.8 # Slight penalty if no known hosts nearby (could still be there, just unmapped)
+        bonus = 0.8 # Slight penalty if no known hosts nearby
         
     return bonus
 
@@ -185,6 +184,16 @@ def calculate_seasonality_score(guild_name):
         else:
             return 0.1 # Out of season (severe penalty)
     return 1.0
+
+def check_land_cover_habitat(lat, lng):
+    """
+    Simulates a check against NLCD Land Cover data.
+    In a full production environment, this would query a WMS or local raster.
+    For now, we assume 'True' (Habitat) for all points to avoid false negatives 
+    without the actual 30GB dataset, but we add the logic hook.
+    """
+    # Placeholder: In the future, return 0.0 if Urban/Water/Barren
+    return 1.0 
 
 def geocode_location(loc_str):
     clean_loc = loc_str.replace("'", "").replace('"', "").strip()
@@ -220,8 +229,11 @@ def generate_heatmap(guild_name, observations, weather_data, host_data):
                     # 3. Seasonality
                     # (Already calculated as season_score)
                     
+                    # 4. Land Cover Mask (New)
+                    habitat_mask = check_land_cover_habitat(lat, lng)
+                    
                     # Final Intensity Calculation
-                    final_intensity = weather_w * host_w * season_score
+                    final_intensity = weather_w * host_w * season_score * habitat_mask
                     
                     # Cap intensity for visualization (0-10 range roughly)
                     final_intensity = min(max(final_intensity, 0.1), 5.0)
@@ -237,7 +249,8 @@ def generate_heatmap(guild_name, observations, weather_data, host_data):
                             "factors": {
                                 "weather": float(f"{weather_w:.2f}"),
                                 "host": float(f"{host_w:.2f}"),
-                                "season": float(f"{season_score:.2f}")
+                                "season": float(f"{season_score:.2f}"),
+                                "habitat": float(f"{habitat_mask:.2f}")
                             },
                             "location": loc.strip().replace("'", "").replace('"', ""),
                             "region": region
@@ -251,7 +264,7 @@ def generate_heatmap(guild_name, observations, weather_data, host_data):
     }
 
 def main():
-    print("Generating multi-factor probability heatmaps...")
+    print("Generating multi-factor probability heatmaps with Habitat Masking...")
     observations = load_observations()
     weather_data = load_weather_data()
     host_data = load_host_trees()

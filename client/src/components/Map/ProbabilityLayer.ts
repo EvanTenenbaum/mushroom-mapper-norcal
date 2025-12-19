@@ -6,7 +6,7 @@ const guildsData = guildsDataRaw as Guild[];
 export const updateProbabilityLayer = (
   map: google.maps.Map, 
   guildId: string,
-  activeFilter: 'total' | 'weather' | 'host' | 'season' = 'total'
+  activeFilter: 'total' | 'weather' | 'host' | 'season' | 'habitat' = 'total'
 ) => {
   const guild = guildsData.find(g => g.id === guildId);
   if (!guild) return { remove: () => {} };
@@ -76,6 +76,11 @@ export const updateProbabilityLayer = (
           "rgba(255, 165, 0, 0)",
           "rgba(255, 165, 0, 1)", // Orange for time/season
           "rgba(255, 69, 0, 1)"
+        ],
+        habitat: [
+          "rgba(34, 139, 34, 0)",
+          "rgba(34, 139, 34, 1)", // Forest Green for habitat
+          "rgba(0, 100, 0, 1)"
         ]
       };
 

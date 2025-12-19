@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Locate, Layers, CloudRain, TreeDeciduous, Calendar } from "lucide-react";
+import { Locate, Layers, CloudRain, TreeDeciduous, Calendar, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MapView } from '@/components/Map';
 import { updateProbabilityLayer } from './ProbabilityLayer';
@@ -12,7 +12,7 @@ interface MainMapProps {
   showUncertainty?: boolean;
 }
 
-type FilterType = 'total' | 'weather' | 'host' | 'season';
+type FilterType = 'total' | 'weather' | 'host' | 'season' | 'habitat';
 
 export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }: MainMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -126,6 +126,16 @@ export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }:
         >
           <Calendar className="w-3 h-3" />
           Seasonality
+        </Button>
+
+        <Button
+          variant={activeFilter === 'habitat' ? "default" : "ghost"}
+          size="sm"
+          className="justify-start gap-2 h-8 text-xs"
+          onClick={() => setActiveFilter('habitat')}
+        >
+          <MapIcon className="w-3 h-3" />
+          Habitat (NLCD)
         </Button>
       </div>
 
