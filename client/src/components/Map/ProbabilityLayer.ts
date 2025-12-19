@@ -6,12 +6,11 @@ const guildsData = guildsDataRaw as Guild[];
 export const updateProbabilityLayer = (
   map: google.maps.Map, 
   guildId: string,
-  activeFilter: 'total' | 'weather' | 'host' | 'season' | 'habitat' = 'total'
+  activeFilter: 'total' | 'weather' | 'host' | 'season' | 'habitat' | 'aspect' = 'total'
 ) => {
   const guild = guildsData.find(g => g.id === guildId);
   if (!guild) return { remove: () => {} };
 
-  // Map guild IDs to filenames
   const fileMap: Record<string, string> = {
     "chanterelle": "golden-chanterelle",
     "hedgehog": "hedgehog-mushroom",
@@ -33,7 +32,6 @@ export const updateProbabilityLayer = (
       const points = data.features.map((f: any) => {
         let weight = f.properties.intensity || 1.0;
         
-        // Apply specific filter if requested
         if (activeFilter !== 'total' && f.properties.factors) {
           weight = f.properties.factors[activeFilter] || 0.1;
         }
@@ -44,7 +42,6 @@ export const updateProbabilityLayer = (
         };
       });
 
-      // Define gradients based on filter type
       const gradients: Record<string, string[]> = {
         total: [
           "rgba(0, 255, 255, 0)",
@@ -64,23 +61,28 @@ export const updateProbabilityLayer = (
         ],
         weather: [
           "rgba(0, 255, 0, 0)",
-          "rgba(0, 255, 0, 1)", // Green for weather/growth
+          "rgba(0, 255, 0, 1)",
           "rgba(255, 255, 0, 1)"
         ],
         host: [
           "rgba(139, 69, 19, 0)",
-          "rgba(139, 69, 19, 1)", // Brown for trees/wood
+          "rgba(139, 69, 19, 1)",
           "rgba(205, 133, 63, 1)"
         ],
         season: [
           "rgba(255, 165, 0, 0)",
-          "rgba(255, 165, 0, 1)", // Orange for time/season
+          "rgba(255, 165, 0, 1)",
           "rgba(255, 69, 0, 1)"
         ],
         habitat: [
           "rgba(34, 139, 34, 0)",
-          "rgba(34, 139, 34, 1)", // Forest Green for habitat
+          "rgba(34, 139, 34, 1)",
           "rgba(0, 100, 0, 1)"
+        ],
+        aspect: [
+          "rgba(128, 0, 128, 0)",
+          "rgba(128, 0, 128, 1)", // Purple for North/East slopes
+          "rgba(255, 0, 255, 1)"
         ]
       };
 

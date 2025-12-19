@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Locate, Layers, CloudRain, TreeDeciduous, Calendar, Map as MapIcon } from "lucide-react";
+import { Locate, Layers, CloudRain, TreeDeciduous, Calendar, Map as MapIcon, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MapView } from '@/components/Map';
 import { updateProbabilityLayer } from './ProbabilityLayer';
@@ -12,7 +12,7 @@ interface MainMapProps {
   showUncertainty?: boolean;
 }
 
-type FilterType = 'total' | 'weather' | 'host' | 'season' | 'habitat';
+type FilterType = 'total' | 'weather' | 'host' | 'season' | 'habitat' | 'aspect';
 
 export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }: MainMapProps) {
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -25,11 +25,9 @@ export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }:
     mapRef.current = map;
     setMapReady(true);
     
-    // Set initial view to NorCal
     map.setCenter(INITIAL_VIEW.center);
     map.setZoom(INITIAL_VIEW.zoom);
     
-    // Restrict bounds
     map.setOptions({
       restriction: {
         latLngBounds: NORCAL_BOUNDS,
@@ -44,16 +42,13 @@ export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }:
     if (onMapLoad) onMapLoad(map);
   };
 
-  // Update Probability Layer (Guilds)
   useEffect(() => {
     if (!mapReady || !mapRef.current || !selectedGuildId) return;
 
-    // Cleanup previous layer
     if (probabilityLayerRef.current) {
       probabilityLayerRef.current.remove();
     }
 
-    // Add new layer with active filter
     probabilityLayerRef.current = updateProbabilityLayer(mapRef.current, selectedGuildId, activeFilter);
 
     return () => {
@@ -61,7 +56,6 @@ export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }:
     };
   }, [mapReady, selectedGuildId, activeFilter]);
 
-  // Update Uncertainty Layer
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
 
@@ -105,7 +99,7 @@ export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }:
           onClick={() => setActiveFilter('weather')}
         >
           <CloudRain className="w-3 h-3" />
-          Weather Only
+          Weather (Hyperlocal)
         </Button>
         
         <Button
@@ -136,6 +130,16 @@ export default function MainMap({ onMapLoad, selectedGuildId, showUncertainty }:
         >
           <MapIcon className="w-3 h-3" />
           Habitat (NLCD)
+        </Button>
+
+        <Button
+          variant={activeFilter === 'aspect' ? "default" : "ghost"}
+          size="sm"
+          className="justify-start gap-2 h-8 text-xs"
+          onClick={() => setActiveFilter('aspect')}
+        >
+          <Compass className="w-3 h-3" />
+          Aspect (Slope)
         </Button>
       </div>
 
