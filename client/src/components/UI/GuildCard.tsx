@@ -1,19 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Info, MapPin, Calendar, TreeDeciduous } from "lucide-react";
 
-interface Guild {
-  id: string;
-  name: string;
-  scientificName: string;
-  tier: string;
-  color: string;
-  seasonality: string;
-  habitat: string;
-  description: string;
-  recentStatus: string;
-  hotspots: string[];
-  image: string;
-}
+import { Guild } from "@/types";
 
 interface GuildCardProps {
   guild: Guild;
@@ -23,10 +11,12 @@ interface GuildCardProps {
 
 export default function GuildCard({ guild, isActive, onClick }: GuildCardProps) {
   return (
-    <div 
+    <button 
       onClick={onClick}
+      type="button"
+      aria-pressed={isActive}
       className={cn(
-        "relative p-4 rounded-xl border transition-all duration-300 cursor-pointer group overflow-hidden",
+        "w-full text-left relative p-4 rounded-xl border transition-all duration-300 cursor-pointer group overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background",
         isActive 
           ? "bg-card border-primary shadow-[0_0_15px_rgba(0,240,255,0.2)]" 
           : "bg-card/40 border-white/5 hover:bg-card/60 hover:border-white/20"
@@ -72,10 +62,13 @@ export default function GuildCard({ guild, isActive, onClick }: GuildCardProps) 
           </div>
 
           {/* Details (Visible when active or hovered) */}
-          <div className={cn(
-            "mt-3 space-y-2 text-sm transition-all duration-300",
-            isActive ? "opacity-100 max-h-40" : "opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-40"
-          )}>
+          <div 
+            aria-hidden={!isActive}
+            className={cn(
+              "mt-3 space-y-2 text-sm transition-all duration-300",
+              isActive ? "opacity-100 max-h-40" : "opacity-0 max-h-0 overflow-hidden group-hover:opacity-100 group-hover:max-h-40"
+            )}
+          >
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="w-3 h-3" />
               <span className="text-xs">{guild.seasonality}</span>
@@ -93,6 +86,6 @@ export default function GuildCard({ guild, isActive, onClick }: GuildCardProps) 
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

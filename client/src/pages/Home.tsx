@@ -2,7 +2,10 @@ import { useState } from "react";
 import MainMap from "@/components/Map/MainMap";
 import GuildCard from "@/components/UI/GuildCard";
 import WeatherWidget from "@/components/UI/WeatherWidget";
-import guildsData from "@/data/guilds.json";
+import guildsDataRaw from "@/data/guilds.json";
+import { Guild } from "@/types";
+
+const guildsData = guildsDataRaw as Guild[];
 import { Layers, AlertTriangle, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
